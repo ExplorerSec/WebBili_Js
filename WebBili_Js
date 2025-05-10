@@ -1,0 +1,107 @@
+// ==UserScript==
+// @name        BiliBili 简洁版
+// @namespace   Violentmonkey Scripts
+// @match       https://www.bilibili.com/*
+// @grant       none
+// @version     1.0
+// @author      ExpZero
+// @description 2025/5/10 21:56:20
+// ==/UserScript==
+
+'use strict';
+
+/* 定义一些工具函数 */
+
+// 将xx:xx转为秒数
+function timestrToSecond(timeStr){
+  const [minutes, seconds] = timeStr.split(':').map(Number);
+  return minutes * 60 + seconds;
+}
+
+// 删除卡片自身
+function rmCardSelf(card){
+  if (card.parentNode.className === 'feed-card') {
+      let card_t = card.parentNode;
+      card_t.parentNode.removeChild(card_t);
+    } else {
+      card.parentNode.removeChild(card);
+    }
+}
+
+
+/* 这些是针对 https://www.bilibili.com 这个主站的 */
+
+// 增加一个领导ID，经过研究发现带领导ID明显能使得页面加载的垃圾更少
+function addLeaderId(){
+  const pathname = window.location.pathname;
+  const search = window.location.search;
+  if(pathname==='/' && search !='?leaderID=0101'){
+    window.location.href = "https://www.bilibili.com/?leaderID=0101";
+  }
+}
+
+// 获取所有普通展示卡片
+function getNormalCards(){
+  return document.querySelectorAll("div[class='bili-video-card is-rcmd enable-no-interest']");
+}
+// 获取所有广告卡片
+function getAdCards(){
+  return document.querySelectorAll("div[class='bili-video-card is-rcmd']");
+}
+// 获取所有课堂、电影、直播推荐等卡片
+function getSingleCards(){
+  return document.querySelectorAll("div[class='floor-single-card']");
+}
+
+// 获取视频卡片的时长-单位为秒
+function getVideoDurationFromCard(card){
+  const strTime = card.querySelector("span[class='bili-video-card__stats__duration']");
+  if(strTime){
+    return timestrToSecond(strTime.outerText);
+  }else{
+    return 0;
+  }
+}
+
+// 清理掉超短时长视频卡片（垃圾水卡）
+function cleanShortVideoCards(cards){
+
+  Array.from(cards).forEach((card) =>{
+    const numSeconds = getVideoDurationFromCard(card);
+    // 设定阈值为一分半
+    if(numSeconds<90){
+      rmCardSelf(card);
+    }
+  });
+}
+
+// 清理其他卡片
+function cleanOtherCards() {
+  let cards1 = getAdCards();
+  Array.from(cards1).forEach((card) => {rmCardSelf(card);});
+  let cards2 = getSingleCards();
+  Array.from(cards2).forEach((card) => {rmCardSelf(card)});
+}
+
+// 定时清理
+function CirclecleanShortVideoCards(){
+  var numList = 0;
+  function myFunction() {
+    cleanOtherCards();
+    let cards = getNormalCards();
+    let numListTmp = cards.length;
+    if(numListTmp!=numList){
+      cleanShortVideoCards(cards);
+      numList = numListTmp;
+    }
+  }
+  setInterval(myFunction, 1000);
+}
+
+
+
+if(window.location.pathname==='/'){
+  console.log("---> 主站：执行");
+  CirclecleanShortVideoCards();
+  addLeaderId();
+}
