@@ -1,9 +1,9 @@
 // ==UserScript==
-// @name        BiliBili 简洁版
+// @name        BiliBili 过滤器
 // @namespace   Violentmonkey Scripts
 // @match       https://www.bilibili.com/*
 // @grant       none
-// @version     1.0
+// @version     1.1
 // @author      ExpZero
 // @description 2025/5/10 21:56:20
 // ==/UserScript==
@@ -43,15 +43,21 @@ function addLeaderId(){
 // 获取所有普通展示卡片
 function getNormalCards(){
   return document.querySelectorAll("div[class='bili-video-card is-rcmd enable-no-interest']");
+
 }
 // 获取所有广告卡片
 function getAdCards(){
   return document.querySelectorAll("div[class='bili-video-card is-rcmd']");
 }
-// 获取所有课堂、电影、直播推荐等卡片
+// 获取所有课堂、电影推荐等卡片
 function getSingleCards(){
   return document.querySelectorAll("div[class='floor-single-card']");
 }
+// 获取所有直播推荐卡片
+function getLiveCards(){
+  return document.querySelectorAll("div[class='bili-live-card is-rcmd enable-no-interest']");
+}
+
 
 // 获取视频卡片的时长-单位为秒
 function getVideoDurationFromCard(card){
@@ -59,7 +65,7 @@ function getVideoDurationFromCard(card){
   if(strTime){
     return timestrToSecond(strTime.outerText);
   }else{
-    return 0;
+    return 1;
   }
 }
 
@@ -68,8 +74,8 @@ function cleanShortVideoCards(cards){
 
   Array.from(cards).forEach((card) =>{
     const numSeconds = getVideoDurationFromCard(card);
-    // 设定阈值为一分半
-    if(numSeconds<90){
+    // 设定阈值为 150 秒
+    if(numSeconds<150){
       rmCardSelf(card);
     }
   });
@@ -81,6 +87,8 @@ function cleanOtherCards() {
   Array.from(cards1).forEach((card) => {rmCardSelf(card);});
   let cards2 = getSingleCards();
   Array.from(cards2).forEach((card) => {rmCardSelf(card)});
+  let live_cards =getLiveCards();
+  Array.from(live_cards).forEach((card) => {rmCardSelf(card)});
 }
 
 // 定时清理
@@ -105,3 +113,5 @@ if(window.location.pathname==='/'){
   CirclecleanShortVideoCards();
   addLeaderId();
 }
+
+
