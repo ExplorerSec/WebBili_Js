@@ -3,7 +3,7 @@
 // @namespace Violentmonkey Scripts
 // @match https://www.bilibili.com/*
 // @grant none
-// @version 1.2
+// @version 1.3
 // @author ExpZero
 // @description 2025/5/10 21:56:20
 // ==/UserScript==
@@ -12,7 +12,11 @@
   'use strict';
 
 /* 定义一些状态 */
-var flag_bFilter = true;
+var flag_bFilter = true; // 是否启用过滤
+var limit_seconds = 150; // 过滤阈值，单位是秒
+
+
+
 
 /* 定义一些工具函数 */
 
@@ -24,12 +28,18 @@ function timestrToSecond(timeStr) {
 
 // 删除卡片自身
 function rmCardSelf(card) {
-    if (card.parentNode.className === 'feed-card') {
-        let card_t = card.parentNode;
-        card_t.parentNode.removeChild(card_t);
-    } else {
-        card.parentNode.removeChild(card);
-    }
+
+  var card_t = card;
+  while(card_t.className!='feed-card'){
+    if(card_t.parentNode==null) {break;}
+    var card_t = card_t.parentNode;
+  }
+  if(card_t.className === 'feed-card'){
+    card_t.parentNode.removeChild(card_t);
+  }else{
+    console.log("--------> Card Remove Failed:");
+    console.log(card);
+  }
 }
 
 
@@ -77,8 +87,8 @@ function getVideoDurationFromCard(card) {
 function cleanShortVideoCards(cards) {
     Array.from(cards).forEach((card) => {
         const numSeconds = getVideoDurationFromCard(card);
-        // 设定阈值为 150 秒
-        if (numSeconds < 150) { rmCardSelf(card); }
+        // 设定过滤阈值(秒)
+        if (numSeconds < limit_seconds) { rmCardSelf(card); }
     });
 }
 
@@ -111,8 +121,8 @@ function CirclecleanShortVideoCards() {
 
 // 添加设置按钮
 function insertSettingButtion() {
-    function f() {
-        // 生成设置按钮
+    window.addEventListener('load',function (){
+      // 生成设置按钮
         const htmlSettingButton = `<button class="right-entry__outside" id="filter_62185C17"><svg viewBox="0 0 24 24" width="20" height="20" class="right-entry-icon"><path d="M18.50005 13.62185C17.6035 13.62185 16.87675 12.89505 16.87675 11.99845C16.87675 11.10195 17.6035 10.37514 18.50005 10.37514C19.39665 10.37514 20.1234 11.10195 20.1234 11.99845C20.1234 12.89505 19.39665 13.62185 18.50005 13.62185zM5.49992 13.6219C4.6033 13.6219 3.87644 12.8951 3.87644 11.99845C3.87644 11.1018 4.6033 10.37497 5.49992 10.37497C6.39655 10.37497 7.12342 11.1018 7.12342 11.99845C7.12342 12.8951 6.39655 13.6219 5.49992 13.6219zM10.37357 11.99845C10.37357 12.8959 11.10105 13.6234 11.99845 13.6234C12.8959 13.6234 13.6234 12.8959 13.6234 11.99845C13.6234 11.10105 12.8959 10.37352 11.99845 10.37352C11.10105 10.37352 10.37357 11.10105 10.37357 11.99845z" fill="currentColor"></path></svg><span class="right-entry-text">启用过滤</span></button>`
         const new_li = document.createElement("li");
         new_li.innerHTML = htmlSettingButton;
@@ -145,21 +155,7 @@ function insertSettingButtion() {
             set_button.addEventListener("click", function () { set_filter(this); });
             console.log("----->已添加过滤设置按钮");
         }
-
-    }
-    let f1 = window.onload;
-    if (f1) {
-        window.onload = function () {
-            f();
-            f1();
-        }
-    } else {
-        window.onload = function () {
-            f();
-        }
-    }
-
-
+    });
 }
 
 
