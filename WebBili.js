@@ -3,7 +3,7 @@
 // @namespace Violentmonkey Scripts
 // @match https://www.bilibili.com/*
 // @grant none
-// @version 1.3
+// @version 1.3-fixed
 // @author ExpZero
 // @description 2025/5/10 21:56:20
 // ==/UserScript==
@@ -30,29 +30,25 @@ function timestrToSecond(timeStr) {
 function rmCardSelf(card) {
 
   var card_t = card;
-  while(card_t.className!='feed-card'){
-    if(card_t.parentNode==null) {break;}
+  let flag = false;
+  while(card_t.parentNode!=null){
+    if(card_t.className=='feed-card'){flag=true;break;};
+    if(card_t.className=='bili-feed-card'){flag=true;break;};
+    if(card_t.className=='bili-video-card'){flag=true;break;};
     var card_t = card_t.parentNode;
   }
-  if(card_t.className === 'feed-card'){
+  if(flag){
     card_t.parentNode.removeChild(card_t);
   }else{
-    console.log("--------> Card Remove Failed:");
-    console.log(card);
+    //console.log("--------> Card Remove Failed:");
+    //console.log(card);
+    card.parentNode.removeChild(card);
   }
 }
 
 
 /* 这些是针对 https://www.bilibili.com 这个主站的 */
 
-// 增加一个领导ID，经过研究发现带领导ID明显能使得页面加载的垃圾更少
-function addLeaderId() {
-    const pathname = window.location.pathname;
-    const search = window.location.search;
-    if (pathname === '/' && search != '?leaderID=0101') {
-        window.location.href = "https://www.bilibili.com/?leaderID=0101";
-    }
-}
 
 // 获取所有普通展示卡片
 function getNormalCards() {
@@ -73,6 +69,36 @@ function getLiveCards() {
 }
 
 
+// 增加一个领导ID，经过研究发现带领导ID明显能使得页面加载的垃圾更少
+function addLeaderId() {
+    const pathname = window.location.pathname;
+    const search = window.location.search;
+    if (pathname === '/' && search != '?leaderID=0101') {
+        window.location.href = "https://www.bilibili.com/?leaderID=0101";
+    }
+}
+
+
+// 获取所有卡片
+function getCardsRoot(){
+    return document.querySelector('div[class="container is-version8"]');
+}
+// 获取所有普通展示卡片
+function filterNormalCards(cards) {
+    return cards.querySelectorAll("div[class='bili-video-card is-rcmd enable-no-interest']");
+}
+// 获取所有广告卡片
+function filterAdCards(cards) {
+    return cards.querySelectorAll("div[class='bili-video-card is-rcmd']");
+}
+// 获取所有课堂、电影推荐等卡片
+function filterSingleCards(cards) {
+    return cards.querySelectorAll("div[class='floor-single-card']");
+}
+// 获取所有直播推荐卡片
+function filterLiveCards(cards) {
+    return cards.querySelectorAll("div[class='bili-live-card is-rcmd enable-no-interest']");
+}
 // 获取视频卡片的时长-单位为秒
 function getVideoDurationFromCard(card) {
     const strTime = card.querySelector("span[class='bili-video-card__stats__duration']");
@@ -100,6 +126,10 @@ function cleanOtherCards() {
     Array.from(cards2).forEach((card) => { rmCardSelf(card) });
     let live_cards = getLiveCards();
     Array.from(live_cards).forEach((card) => { rmCardSelf(card) });
+    let empty_cards = document.querySelectorAll('.feed-card');
+    empty_cards.forEach((card)=>{
+      if(card.innerHTML===''){rmCardSelf(card);};
+    })
 }
 
 // 定时清理
@@ -115,6 +145,7 @@ function CirclecleanShortVideoCards() {
                 numList = numListTmp;
           }
         }
+
     }
     setInterval(myFunction, 1000);
 }
